@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\OfflineSandbox.Core\OfflineSandbox.Core.csproj" />
+    <ProjectReference Include="..\SnapshotCLI.Core\SnapshotCLI.Core.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
