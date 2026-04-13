@@ -119,6 +119,26 @@ namespace SnapshotCLI.Server
                                 response.Payload = "Invalid payload format. Missing '|'.";
                             }
                             break;
+
+                        case CommandType.ListFiles:
+                            string targetDir = GetSafePath(packet.Project, packet.Branch);
+                            
+                            if (Directory.Exists(targetDir))
+                            {
+                                // Get just the file names, not the massive full C:/ paths
+                                var files = Directory.GetFiles(targetDir).Select(Path.GetFileName).ToArray();
+                                response.Command = CommandType.ListFiles;
+                                
+                                // Return the list, or a friendly message if it's empty
+                                response.Payload = files.Length > 0 ? string.Join("\n", files) : "Vault is empty.";
+                                Console.WriteLine($"[Vault] {dName} requested the file list.");
+                            }
+                            else
+                            {
+                                response.Command = CommandType.Error;
+                                response.Payload = "Branch directory does not exist yet.";
+                            }
+                            break;
                     }
 
                     byte[] responseBytes = response.ToBytes();
