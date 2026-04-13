@@ -120,23 +120,50 @@ namespace SnapshotCLI.Server
                             }
                             break;
 
-                        case CommandType.ListFiles:
+                        case CommandType.ListDirectory:
                             string targetDir = GetSafePath(packet.Project, packet.Branch);
                             
                             if (Directory.Exists(targetDir))
                             {
-                                // Get just the file names, not the massive full C:/ paths
-                                var files = Directory.GetFiles(targetDir).Select(Path.GetFileName).ToArray();
-                                response.Command = CommandType.ListFiles;
+                                // 1. Get directories and tag them
+                                var dirs = Directory.GetDirectories(targetDir)
+                                    .Select(d => $"[DIR]  {Path.GetFileName(d)}")
+                                    .ToList();
+
+                                // 2. Get files and align them cleanly
+                                var files = Directory.GetFiles(targetDir)
+                                    .Select(f => $"       {Path.GetFileName(f)}")
+                                    .ToList();
+
+                                // 3. Combine them (Folders first, then files)
+                                var allEntries = dirs.Concat(files).ToArray();
                                 
-                                // Return the list, or a friendly message if it's empty
-                                response.Payload = files.Length > 0 ? string.Join("\n", files) : "Vault is empty.";
-                                Console.WriteLine($"[Vault] {dName} requested the file list.");
+                                response.Command = CommandType.ListDirectory;
+                                response.Payload = allEntries.Length > 0 ? string.Join("\n", allEntries) : "Vault is empty.";
+                                Console.WriteLine($"[Vault] {dName} requested the directory list.");
                             }
                             else
                             {
                                 response.Command = CommandType.Error;
                                 response.Payload = "Branch directory does not exist yet.";
+                            }
+                            break;
+
+                            case CommandType.CreateDirectory:
+                            // We reuse GetSafePath. If Payload is "models", it cleanly appends it.
+                            string newDirPath = GetSafePath(packet.Project, packet.Branch, packet.Payload);
+                            
+                            if (!Directory.Exists(newDirPath))
+                            {
+                                Directory.CreateDirectory(newDirPath);
+                                response.Command = CommandType.CreateDirectory;
+                                response.Payload = $"SUCCESS: Directory '{packet.Payload}' created.";
+                                Console.WriteLine($"[Vault] {dName} created directory: {packet.Payload}");
+                            }
+                            else
+                            {
+                                response.Command = CommandType.Error;
+                                response.Payload = $"DENIED: Directory '{packet.Payload}' already exists.";
                             }
                             break;
                     }
